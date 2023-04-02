@@ -1843,30 +1843,30 @@ func (c *creator) insertLastID(ctx context.Context, insert *sql.InsertBuilder) e
 		return err
 	}
 	// MySQL does not support the "RETURNING" clause.
-	if insert.Dialect() != dialect.MySQL {
-		rows := &sql.Rows{}
-		if err := c.tx.Query(ctx, query, args, rows); err != nil {
-			return err
-		}
-		defer rows.Close()
-		switch _, ok := c.ID.Value.(field.ValueScanner); {
-		case ok:
-			// If the ID implements the sql.Scanner
-			// interface it should be a pointer type.
-			return sql.ScanOne(rows, c.ID.Value)
-		case c.ID.Type.Numeric():
-			// Normalize the type to int64 to make it
-			// looks like LastInsertId.
-			id, err := sql.ScanInt64(rows)
-			if err != nil {
-				return err
-			}
-			c.ID.Value = id
-			return nil
-		default:
-			return sql.ScanOne(rows, &c.ID.Value)
-		}
-	}
+	//if insert.Dialect() != dialect.MySQL {
+	//	rows := &sql.Rows{}
+	//	if err := c.tx.Query(ctx, query, args, rows); err != nil {
+	//		return err
+	//	}
+	//	defer rows.Close()
+	//	switch _, ok := c.ID.Value.(field.ValueScanner); {
+	//	case ok:
+	//		// If the ID implements the sql.Scanner
+	//		// interface it should be a pointer type.
+	//		return sql.ScanOne(rows, c.ID.Value)
+	//	case c.ID.Type.Numeric():
+	//		// Normalize the type to int64 to make it
+	//		// looks like LastInsertId.
+	//		id, err := sql.ScanInt64(rows)
+	//		if err != nil {
+	//			return err
+	//		}
+	//		c.ID.Value = id
+	//		return nil
+	//	default:
+	//		return sql.ScanOne(rows, &c.ID.Value)
+	//	}
+	//}
 	// MySQL.
 	var res sql.Result
 	if err := c.tx.Exec(ctx, query, args, &res); err != nil {
@@ -1891,28 +1891,28 @@ func (c *batchCreator) insertLastIDs(ctx context.Context, tx dialect.ExecQuerier
 		return err
 	}
 	// MySQL does not support the "RETURNING" clause.
-	if insert.Dialect() != dialect.MySQL {
-		rows := &sql.Rows{}
-		if err := tx.Query(ctx, query, args, rows); err != nil {
-			return err
-		}
-		defer rows.Close()
-		for i := 0; rows.Next(); i++ {
-			node := c.Nodes[i]
-			if node.ID.Type.Numeric() {
-				// Normalize the type to int64 to make it looks
-				// like LastInsertId.
-				var id int64
-				if err := rows.Scan(&id); err != nil {
-					return err
-				}
-				node.ID.Value = id
-			} else if err := rows.Scan(&node.ID.Value); err != nil {
-				return err
-			}
-		}
-		return rows.Err()
-	}
+	//if insert.Dialect() != dialect.MySQL {
+	//	rows := &sql.Rows{}
+	//	if err := tx.Query(ctx, query, args, rows); err != nil {
+	//		return err
+	//	}
+	//	defer rows.Close()
+	//	for i := 0; rows.Next(); i++ {
+	//		node := c.Nodes[i]
+	//		if node.ID.Type.Numeric() {
+	//			// Normalize the type to int64 to make it looks
+	//			// like LastInsertId.
+	//			var id int64
+	//			if err := rows.Scan(&id); err != nil {
+	//				return err
+	//			}
+	//			node.ID.Value = id
+	//		} else if err := rows.Scan(&node.ID.Value); err != nil {
+	//			return err
+	//		}
+	//	}
+	//	return rows.Err()
+	//}
 	// MySQL.
 	var res sql.Result
 	if err := tx.Exec(ctx, query, args, &res); err != nil {

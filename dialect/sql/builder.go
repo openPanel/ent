@@ -3023,11 +3023,12 @@ func joinOrder(order []any, b *Builder) {
 }
 
 func joinReturning(columns []string, b *Builder) {
-	if len(columns) == 0 || (!b.postgres() && !b.sqlite()) {
-		return
-	}
-	b.WriteString(" RETURNING ")
-	b.IdentComma(columns...)
+	//if len(columns) == 0 || (!b.postgres() && !b.sqlite()) {
+	//	return
+	//}
+	//b.WriteString(" RETURNING ")
+	//b.IdentComma(columns...)
+	return
 }
 
 func (s *Selector) joinSelect(b *Builder) {
