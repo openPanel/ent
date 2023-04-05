@@ -309,12 +309,12 @@ type (
 	OrderByOptions struct {
 		// Step to get the edge to order by its count.
 		Step *Step
-		// Desc indicates if the ordering should be in descending order. When false, NULL values
-		// are ordered first (default in MySQL and SQLite). When true, NULLs are ordered last.
-		Desc bool
 		// Terms used for non-aggregation ordering.
 		// See, OrderByNeighborTerms for more info.
 		Terms []OrderByTerm
+		// Selected indicates that the order terms
+		// should be appended to the query selection.
+		Selected bool
 	}
 	// OrderByInfo holds the information done by the OrderBy functions.
 	OrderByInfo struct {
@@ -332,11 +332,17 @@ type (
 	OrderByOption func(*OrderByOptions)
 )
 
-// OrderDesc sets the order to be descending order.
-// This option is valid only for a single count order.
+// OrderDesc sets the latest order by term as descending order,
+// or add a new descending order term if no terms are present.
 func OrderDesc() OrderByOption {
 	return func(opts *OrderByOptions) {
-		opts.Desc = true
+		if len(opts.Terms) > 0 {
+			opts.Terms[len(opts.Terms)-1].Desc = true
+		} else {
+			opts.Terms = append(opts.Terms, OrderByTerm{
+				Desc: true,
+			})
+		}
 	}
 }
 
@@ -380,6 +386,13 @@ func OrderByColumnDesc(c string) OrderByOption {
 	}
 }
 
+// OrderBySelected appends the ordered columns or terms with aliases to the query selection.
+func OrderBySelected() OrderByOption {
+	return func(opts *OrderByOptions) {
+		opts.Selected = true
+	}
+}
+
 // NewOrderBy gets list of options and returns a configured order-by.
 //
 //	NewOrderBy(
@@ -402,12 +415,15 @@ func NewOrderBy(s *Step, opts ...OrderByOption) *OrderByOptions {
 }
 
 // countAlias returns the alias to use for the count column.
-func countAlias(q *sql.Selector, s *Step) string {
+func countAlias(q *sql.Selector, opts *OrderByOptions) string {
+	if len(opts.Terms) == 1 && opts.Terms[0].As != "" {
+		return opts.Terms[0].As
+	}
 	selected := make(map[string]struct{})
 	for _, c := range q.SelectedColumns() {
 		selected[c] = struct{}{}
 	}
-	column := fmt.Sprintf("count_%s", s.To.Table)
+	column := fmt.Sprintf("count_%s", opts.Step.To.Table)
 	// If the column was already selected,
 	// try to find a free alias.
 	if _, ok := selected[column]; ok {
@@ -423,32 +439,30 @@ func countAlias(q *sql.Selector, s *Step) string {
 
 // OrderByNeighborsCount appends ordering based on the number of neighbors.
 // For example, order users by their number of posts.
-func OrderByNeighborsCount(q *sql.Selector, opts *OrderByOptions) *OrderByInfo {
+func OrderByNeighborsCount(q *sql.Selector, opts *OrderByOptions) {
 	var (
-		countC string
-		join   *sql.Selector
-		build  = sql.Dialect(q.Dialect())
+		desc  bool
+		join  *sql.Selector
+		build = sql.Dialect(q.Dialect())
 	)
+	if len(opts.Terms) == 1 {
+		desc = opts.Terms[0].Desc
+	}
 	switch s := opts.Step; {
 	case s.FromEdgeOwner():
 		// For M2O and O2O inverse, the FK resides in the same table.
 		// Hence, the order by is on the nullability of the column.
 		x := func(b *sql.Builder) {
 			b.Ident(s.From.Column)
-			if opts.Desc {
+			if desc {
 				b.WriteOp(sql.OpNotNull)
 			} else {
 				b.WriteOp(sql.OpIsNull)
 			}
 		}
 		q.OrderExpr(build.Expr(x))
-		return &OrderByInfo{
-			Terms: []OrderByTerm{
-				{Expr: build.Expr(x), Type: field.TypeBool},
-			},
-		}
 	case s.ThroughEdgeTable():
-		countC = countAlias(q, s)
+		countC := countAlias(q, opts)
 		pk1 := s.Edge.Columns[0]
 		if s.Edge.Inverse {
 			pk1 = s.Edge.Columns[1]
@@ -465,8 +479,11 @@ func OrderByNeighborsCount(q *sql.Selector, opts *OrderByOptions) *OrderByInfo {
 				q.C(s.From.Column),
 				join.C(pk1),
 			)
+		opts.Terms = []OrderByTerm{{As: countC, Type: field.TypeInt, Desc: desc}}
+		orderTerms(q, join, opts.Terms)
+		appendTerms(q, opts)
 	case s.ToEdgeOwner():
-		countC = countAlias(q, s)
+		countC := countAlias(q, opts)
 		edgeT := build.Table(s.Edge.Table).Schema(s.Edge.Schema)
 		join = build.Select(
 			edgeT.C(s.Edge.Columns[0]),
@@ -479,12 +496,10 @@ func OrderByNeighborsCount(q *sql.Selector, opts *OrderByOptions) *OrderByInfo {
 				q.C(s.From.Column),
 				join.C(s.Edge.Columns[0]),
 			)
+		opts.Terms = []OrderByTerm{{As: countC, Type: field.TypeInt, Desc: desc}}
+		orderTerms(q, join, opts.Terms)
+		appendTerms(q, opts)
 	}
-	terms := []OrderByTerm{
-		{Column: countC, Type: field.TypeInt, Desc: opts.Desc},
-	}
-	orderTerms(q, join, terms)
-	return &OrderByInfo{Terms: terms}
 }
 
 func orderTerms(q, join *sql.Selector, ts []OrderByTerm) {
@@ -522,6 +537,20 @@ func selectTerms(q *sql.Selector, ts []OrderByTerm) {
 			q.AppendSelect(q.C(t.Column))
 		case t.Expr != nil:
 			q.AppendSelectExprAs(t.Expr, t.As)
+		}
+	}
+}
+
+func appendTerms(q *sql.Selector, opts *OrderByOptions) {
+	if !opts.Selected {
+		return
+	}
+	for _, t := range opts.Terms {
+		switch {
+		case t.As != "":
+			q.AppendSelect(t.As)
+		case t.Column != "":
+			q.AppendSelect(q.C(t.Column))
 		}
 	}
 }
@@ -566,6 +595,7 @@ func OrderByNeighborTerms(q *sql.Selector, opts *OrderByOptions) {
 			On(q.C(s.From.Column), join.C(s.Edge.Columns[0]))
 	}
 	orderTerms(q, join, opts.Terms)
+	appendTerms(q, opts)
 }
 
 type (
@@ -961,6 +991,11 @@ func (q *query) nodes(ctx context.Context, drv dialect.Driver) error {
 		if err != nil {
 			return err
 		}
+		for i, v := range values {
+			if _, ok := v.(*sql.UnknownType); ok {
+				values[i] = sql.ScanTypeOf(rows, i)
+			}
+		}
 		if err := rows.Scan(values...); err != nil {
 			return err
 		}
@@ -1302,6 +1337,11 @@ func (u *updater) scan(rows *sql.Rows) error {
 	values, err := u.ScanValues(columns)
 	if err != nil {
 		return err
+	}
+	for i, v := range values {
+		if _, ok := v.(*sql.UnknownType); ok {
+			values[i] = sql.ScanTypeOf(rows, i)
+		}
 	}
 	if err := rows.Scan(values...); err != nil {
 		return fmt.Errorf("failed scanning rows: %w", err)
