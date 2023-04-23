@@ -255,12 +255,21 @@ func HasNeighbors(q *sql.Selector, s *Step) {
 		q.Where(sql.NotNull(q.C(s.Edge.Columns[0])))
 	case s.ToEdgeOwner():
 		to := builder.Table(s.Edge.Table).Schema(s.Edge.Schema)
+		// In case the edge reside on the same table, give
+		// the edge an alias to make qualifier different.
+		if s.From.Table == s.Edge.Table {
+			to.As(fmt.Sprintf("%s_edge", s.Edge.Table))
+		}
 		q.Where(
-			sql.In(
-				q.C(s.From.Column),
+			sql.Exists(
 				builder.Select(to.C(s.Edge.Columns[0])).
 					From(to).
-					Where(sql.NotNull(to.C(s.Edge.Columns[0]))),
+					Where(
+						sql.ColumnsEQ(
+							q.C(s.From.Column),
+							to.C(s.Edge.Columns[0]),
+						),
+					),
 			),
 		)
 	}
@@ -390,37 +399,48 @@ func OrderByNeighborsCount(q *sql.Selector, s *Step, opts ...sql.OrderTermOption
 func orderTerms(q, join *sql.Selector, ts []sql.OrderTerm) {
 	for _, t := range ts {
 		t := t
-		q.OrderExprFunc(func(b *sql.Builder) {
-			var desc, nullsfirst, nullslast bool
-			switch t := t.(type) {
-			case *sql.OrderFieldTerm:
-				f := t.Field
-				if t.As != "" {
-					f = t.As
-				}
-				c := join.C(f)
-				b.WriteString(c)
+		var (
+			// Order by column or expression.
+			orderC string
+			orderX func(*sql.Selector) sql.Querier
+			// Order by options.
+			desc, nullsfirst, nullslast bool
+		)
+		switch t := t.(type) {
+		case *sql.OrderFieldTerm:
+			f := t.Field
+			if t.As != "" {
+				f = t.As
+			}
+			orderC = join.C(f)
+			if t.Selected {
+				q.AppendSelect(orderC)
+			}
+			desc = t.Desc
+			nullsfirst = t.NullsFirst
+			nullslast = t.NullsLast
+		case *sql.OrderExprTerm:
+			if t.As != "" {
+				orderC = join.C(t.As)
 				if t.Selected {
-					q.AppendSelect(c)
+					q.AppendSelect(orderC)
 				}
-				desc = t.Desc
-				nullsfirst = t.NullsFirst
-				nullslast = t.NullsLast
-			case *sql.OrderExprTerm:
-				if t.As != "" {
-					c := join.C(t.As)
-					b.WriteString(c)
-					if t.Selected {
-						q.AppendSelect(c)
-					}
-				} else {
-					b.Join(t.Expr(join))
-				}
-				desc = t.Desc
-				nullsfirst = t.NullsFirst
-				nullslast = t.NullsLast
-			default:
-				return
+			} else {
+				orderX = t.Expr
+			}
+			desc = t.Desc
+			nullsfirst = t.NullsFirst
+			nullslast = t.NullsLast
+		default:
+			continue
+		}
+		q.OrderExprFunc(func(b *sql.Builder) {
+			// Write the ORDER BY term.
+			switch {
+			case orderC != "":
+				b.WriteString(orderC)
+			case orderX != nil:
+				b.Join(orderX(join))
 			}
 			// Unlike MySQL and SQLite, NULL values sort as if larger than any other value. Therefore,
 			// we need to explicitly order NULLs first on ASC and last on DESC unless specified otherwise.
@@ -447,7 +467,11 @@ func selectTerms(q *sql.Selector, ts []sql.OrderTerm) {
 	for _, t := range ts {
 		switch t := t.(type) {
 		case *sql.OrderFieldTerm:
-			q.AppendSelect(q.C(t.Field))
+			if t.As != "" {
+				q.AppendSelectAs(q.C(t.Field), t.As)
+			} else {
+				q.AppendSelect(q.C(t.Field))
+			}
 		case *sql.OrderExprTerm:
 			q.AppendSelectExprAs(t.Expr(q), t.As)
 		}

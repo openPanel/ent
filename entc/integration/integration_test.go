@@ -2061,6 +2061,13 @@ func NamedEagerLoading(t *testing.T, client *ent.Client) {
 	unknown, err := a8m.NamedPets("Unknown")
 	require.True(t, ent.IsNotLoaded(err))
 	require.Nil(t, unknown)
+
+	exists := client.User.Query().
+		WithNamedPets("WithSelection", func(q *ent.PetQuery) {
+			q.Select(pet.FieldID)
+		}).
+		ExistX(ctx)
+	require.True(t, exists)
 }
 
 // writerFunc is an io.Writer implemented by the underlying func.
@@ -2412,6 +2419,39 @@ func OrderByFluent(t *testing.T, client *ent.Client) {
 			).
 			IDsX(ctx)
 		require.Equal(t, []int{pets[5].ID, pets[1].ID, pets[0].ID, pets[4].ID, pets[3].ID, pets[2].ID, pets[7].ID, pets[6].ID}, ids)
+	})
+
+	t.Run("M2O/SelectedOwner", func(t *testing.T) {
+		const as = "owner_name"
+		query := client.Pet.Query().
+			Order(
+				pet.ByOwnerField(
+					user.FieldName,
+					sql.OrderSelectAs(as),
+				),
+			)
+		// No owner.
+		for _, u := range query.Clone().Limit(2).AllX(ctx) {
+			name, err := u.Value(as)
+			require.NoError(t, err)
+			require.Nil(t, name)
+		}
+		// User "a".
+		for _, u := range query.Clone().Offset(2).Limit(3).AllX(ctx) {
+			name, err := u.Value(as)
+			require.NoError(t, err)
+			require.EqualValues(t, users[0].Name, name)
+		}
+		// User "b".
+		for _, u := range query.Clone().Offset(5).Limit(2).AllX(ctx) {
+			name, err := u.Value(as)
+			require.NoError(t, err)
+			require.EqualValues(t, users[1].Name, name)
+		}
+		// User "c".
+		name, err := query.Clone().Offset(7).OnlyX(ctx).Value(as)
+		require.NoError(t, err)
+		require.EqualValues(t, users[2].Name, name)
 	})
 
 	t.Run("O2M/Count", func(t *testing.T) {

@@ -25,7 +25,7 @@ import (
 type BlobQuery struct {
 	config
 	ctx           *QueryContext
-	order         []blob.Order
+	order         []blob.OrderOption
 	inters        []Interceptor
 	predicates    []predicate.Blob
 	withParent    *BlobQuery
@@ -63,7 +63,7 @@ func (bq *BlobQuery) Unique(unique bool) *BlobQuery {
 }
 
 // Order specifies how the records should be ordered.
-func (bq *BlobQuery) Order(o ...blob.Order) *BlobQuery {
+func (bq *BlobQuery) Order(o ...blob.OrderOption) *BlobQuery {
 	bq.order = append(bq.order, o...)
 	return bq
 }
@@ -323,7 +323,7 @@ func (bq *BlobQuery) Clone() *BlobQuery {
 	return &BlobQuery{
 		config:        bq.config,
 		ctx:           bq.ctx.Clone(),
-		order:         append([]blob.Order{}, bq.order...),
+		order:         append([]blob.OrderOption{}, bq.order...),
 		inters:        append([]Interceptor{}, bq.inters...),
 		predicates:    append([]predicate.Blob{}, bq.predicates...),
 		withParent:    bq.withParent.Clone(),
@@ -603,6 +603,9 @@ func (bq *BlobQuery) loadBlobLinks(ctx context.Context, query *BlobLinkQuery, no
 			init(nodes[i])
 		}
 	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(bloblink.FieldBlobID)
+	}
 	query.Where(predicate.BlobLink(func(s *sql.Selector) {
 		s.Where(sql.InValues(s.C(blob.BlobLinksColumn), fks...))
 	}))
@@ -614,7 +617,7 @@ func (bq *BlobQuery) loadBlobLinks(ctx context.Context, query *BlobLinkQuery, no
 		fk := n.BlobID
 		node, ok := nodeids[fk]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "blob_id" returned %v for node %v`, fk, n)
+			return fmt.Errorf(`unexpected referenced foreign-key "blob_id" returned %v for node %v`, fk, n)
 		}
 		assign(node, n)
 	}

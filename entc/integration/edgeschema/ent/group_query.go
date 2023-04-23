@@ -27,7 +27,7 @@ import (
 type GroupQuery struct {
 	config
 	ctx             *QueryContext
-	order           []group.Order
+	order           []group.OrderOption
 	inters          []Interceptor
 	predicates      []predicate.Group
 	withUsers       *UserQuery
@@ -65,7 +65,7 @@ func (gq *GroupQuery) Unique(unique bool) *GroupQuery {
 }
 
 // Order specifies how the records should be ordered.
-func (gq *GroupQuery) Order(o ...group.Order) *GroupQuery {
+func (gq *GroupQuery) Order(o ...group.OrderOption) *GroupQuery {
 	gq.order = append(gq.order, o...)
 	return gq
 }
@@ -347,7 +347,7 @@ func (gq *GroupQuery) Clone() *GroupQuery {
 	return &GroupQuery{
 		config:          gq.config,
 		ctx:             gq.ctx.Clone(),
-		order:           append([]group.Order{}, gq.order...),
+		order:           append([]group.OrderOption{}, gq.order...),
 		inters:          append([]Interceptor{}, gq.inters...),
 		predicates:      append([]predicate.Group{}, gq.predicates...),
 		withUsers:       gq.withUsers.Clone(),
@@ -670,6 +670,9 @@ func (gq *GroupQuery) loadJoinedUsers(ctx context.Context, query *UserGroupQuery
 			init(nodes[i])
 		}
 	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(usergroup.FieldGroupID)
+	}
 	query.Where(predicate.UserGroup(func(s *sql.Selector) {
 		s.Where(sql.InValues(s.C(group.JoinedUsersColumn), fks...))
 	}))
@@ -681,7 +684,7 @@ func (gq *GroupQuery) loadJoinedUsers(ctx context.Context, query *UserGroupQuery
 		fk := n.GroupID
 		node, ok := nodeids[fk]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "group_id" returned %v for node %v`, fk, n.ID)
+			return fmt.Errorf(`unexpected referenced foreign-key "group_id" returned %v for node %v`, fk, n.ID)
 		}
 		assign(node, n)
 	}
@@ -697,6 +700,9 @@ func (gq *GroupQuery) loadGroupTags(ctx context.Context, query *GroupTagQuery, n
 			init(nodes[i])
 		}
 	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(grouptag.FieldGroupID)
+	}
 	query.Where(predicate.GroupTag(func(s *sql.Selector) {
 		s.Where(sql.InValues(s.C(group.GroupTagsColumn), fks...))
 	}))
@@ -708,7 +714,7 @@ func (gq *GroupQuery) loadGroupTags(ctx context.Context, query *GroupTagQuery, n
 		fk := n.GroupID
 		node, ok := nodeids[fk]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "group_id" returned %v for node %v`, fk, n.ID)
+			return fmt.Errorf(`unexpected referenced foreign-key "group_id" returned %v for node %v`, fk, n.ID)
 		}
 		assign(node, n)
 	}

@@ -27,7 +27,7 @@ import (
 type TagQuery struct {
 	config
 	ctx           *QueryContext
-	order         []tag.Order
+	order         []tag.OrderOption
 	inters        []Interceptor
 	predicates    []predicate.Tag
 	withTweets    *TweetQuery
@@ -65,7 +65,7 @@ func (tq *TagQuery) Unique(unique bool) *TagQuery {
 }
 
 // Order specifies how the records should be ordered.
-func (tq *TagQuery) Order(o ...tag.Order) *TagQuery {
+func (tq *TagQuery) Order(o ...tag.OrderOption) *TagQuery {
 	tq.order = append(tq.order, o...)
 	return tq
 }
@@ -347,7 +347,7 @@ func (tq *TagQuery) Clone() *TagQuery {
 	return &TagQuery{
 		config:        tq.config,
 		ctx:           tq.ctx.Clone(),
-		order:         append([]tag.Order{}, tq.order...),
+		order:         append([]tag.OrderOption{}, tq.order...),
 		inters:        append([]Interceptor{}, tq.inters...),
 		predicates:    append([]predicate.Tag{}, tq.predicates...),
 		withTweets:    tq.withTweets.Clone(),
@@ -670,6 +670,9 @@ func (tq *TagQuery) loadTweetTags(ctx context.Context, query *TweetTagQuery, nod
 			init(nodes[i])
 		}
 	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(tweettag.FieldTagID)
+	}
 	query.Where(predicate.TweetTag(func(s *sql.Selector) {
 		s.Where(sql.InValues(s.C(tag.TweetTagsColumn), fks...))
 	}))
@@ -681,7 +684,7 @@ func (tq *TagQuery) loadTweetTags(ctx context.Context, query *TweetTagQuery, nod
 		fk := n.TagID
 		node, ok := nodeids[fk]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "tag_id" returned %v for node %v`, fk, n.ID)
+			return fmt.Errorf(`unexpected referenced foreign-key "tag_id" returned %v for node %v`, fk, n.ID)
 		}
 		assign(node, n)
 	}
@@ -697,6 +700,9 @@ func (tq *TagQuery) loadGroupTags(ctx context.Context, query *GroupTagQuery, nod
 			init(nodes[i])
 		}
 	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(grouptag.FieldTagID)
+	}
 	query.Where(predicate.GroupTag(func(s *sql.Selector) {
 		s.Where(sql.InValues(s.C(tag.GroupTagsColumn), fks...))
 	}))
@@ -708,7 +714,7 @@ func (tq *TagQuery) loadGroupTags(ctx context.Context, query *GroupTagQuery, nod
 		fk := n.TagID
 		node, ok := nodeids[fk]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "tag_id" returned %v for node %v`, fk, n.ID)
+			return fmt.Errorf(`unexpected referenced foreign-key "tag_id" returned %v for node %v`, fk, n.ID)
 		}
 		assign(node, n)
 	}

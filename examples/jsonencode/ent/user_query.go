@@ -24,7 +24,7 @@ import (
 type UserQuery struct {
 	config
 	ctx        *QueryContext
-	order      []user.Order
+	order      []user.OrderOption
 	inters     []Interceptor
 	predicates []predicate.User
 	withPets   *PetQuery
@@ -59,7 +59,7 @@ func (uq *UserQuery) Unique(unique bool) *UserQuery {
 }
 
 // Order specifies how the records should be ordered.
-func (uq *UserQuery) Order(o ...user.Order) *UserQuery {
+func (uq *UserQuery) Order(o ...user.OrderOption) *UserQuery {
 	uq.order = append(uq.order, o...)
 	return uq
 }
@@ -275,7 +275,7 @@ func (uq *UserQuery) Clone() *UserQuery {
 	return &UserQuery{
 		config:     uq.config,
 		ctx:        uq.ctx.Clone(),
-		order:      append([]user.Order{}, uq.order...),
+		order:      append([]user.OrderOption{}, uq.order...),
 		inters:     append([]Interceptor{}, uq.inters...),
 		predicates: append([]predicate.User{}, uq.predicates...),
 		withPets:   uq.withPets.Clone(),
@@ -416,6 +416,9 @@ func (uq *UserQuery) loadPets(ctx context.Context, query *PetQuery, nodes []*Use
 			init(nodes[i])
 		}
 	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(pet.FieldOwnerID)
+	}
 	query.Where(predicate.Pet(func(s *sql.Selector) {
 		s.Where(sql.InValues(s.C(user.PetsColumn), fks...))
 	}))
@@ -427,7 +430,7 @@ func (uq *UserQuery) loadPets(ctx context.Context, query *PetQuery, nodes []*Use
 		fk := n.OwnerID
 		node, ok := nodeids[fk]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "owner_id" returned %v for node %v`, fk, n.ID)
+			return fmt.Errorf(`unexpected referenced foreign-key "owner_id" returned %v for node %v`, fk, n.ID)
 		}
 		assign(node, n)
 	}

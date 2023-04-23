@@ -25,7 +25,7 @@ import (
 type DeviceQuery struct {
 	config
 	ctx               *QueryContext
-	order             []device.Order
+	order             []device.OrderOption
 	inters            []Interceptor
 	predicates        []predicate.Device
 	withActiveSession *SessionQuery
@@ -62,7 +62,7 @@ func (dq *DeviceQuery) Unique(unique bool) *DeviceQuery {
 }
 
 // Order specifies how the records should be ordered.
-func (dq *DeviceQuery) Order(o ...device.Order) *DeviceQuery {
+func (dq *DeviceQuery) Order(o ...device.OrderOption) *DeviceQuery {
 	dq.order = append(dq.order, o...)
 	return dq
 }
@@ -300,7 +300,7 @@ func (dq *DeviceQuery) Clone() *DeviceQuery {
 	return &DeviceQuery{
 		config:            dq.config,
 		ctx:               dq.ctx.Clone(),
-		order:             append([]device.Order{}, dq.order...),
+		order:             append([]device.OrderOption{}, dq.order...),
 		inters:            append([]Interceptor{}, dq.inters...),
 		predicates:        append([]predicate.Device{}, dq.predicates...),
 		withActiveSession: dq.withActiveSession.Clone(),
@@ -492,7 +492,7 @@ func (dq *DeviceQuery) loadSessions(ctx context.Context, query *SessionQuery, no
 		}
 		node, ok := nodeids[*fk]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "device_sessions" returned %v for node %v`, *fk, n.ID)
+			return fmt.Errorf(`unexpected referenced foreign-key "device_sessions" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
 	}

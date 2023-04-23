@@ -460,7 +460,7 @@ func TestHasNeighbors(t *testing.T) {
 				Edge(O2O, false, "nodes", "prev_id"),
 			),
 			selector:  sql.Select("*").From(sql.Table("nodes")),
-			wantQuery: "SELECT * FROM `nodes` WHERE `nodes`.`id` IN (SELECT `nodes`.`prev_id` FROM `nodes` WHERE `nodes`.`prev_id` IS NOT NULL)",
+			wantQuery: "SELECT * FROM `nodes` WHERE EXISTS (SELECT `nodes_edge`.`prev_id` FROM `nodes` AS `nodes_edge` WHERE `nodes`.`id` = `nodes_edge`.`prev_id`)",
 		},
 		{
 			name: "O2O/1type/inverse",
@@ -482,7 +482,7 @@ func TestHasNeighbors(t *testing.T) {
 				Edge(O2M, false, "pets", "owner_id"),
 			),
 			selector:  sql.Select("*").From(sql.Table("users")),
-			wantQuery: "SELECT * FROM `users` WHERE `users`.`id` IN (SELECT `pets`.`owner_id` FROM `pets` WHERE `pets`.`owner_id` IS NOT NULL)",
+			wantQuery: "SELECT * FROM `users` WHERE EXISTS (SELECT `pets`.`owner_id` FROM `pets` WHERE `users`.`id` = `pets`.`owner_id`)",
 		},
 		{
 			name: "M2O/2type2",
@@ -526,7 +526,7 @@ func TestHasNeighbors(t *testing.T) {
 				return step
 			}(),
 			selector:  sql.Select("*").From(sql.Table("nodes").Schema("s1")),
-			wantQuery: "SELECT * FROM `s1`.`nodes` WHERE `s1`.`nodes`.`id` IN (SELECT `s1`.`nodes`.`prev_id` FROM `s1`.`nodes` WHERE `s1`.`nodes`.`prev_id` IS NOT NULL)",
+			wantQuery: "SELECT * FROM `s1`.`nodes` WHERE EXISTS (SELECT `nodes_edge`.`prev_id` FROM `s1`.`nodes` AS `nodes_edge` WHERE `s1`.`nodes`.`id` = `nodes_edge`.`prev_id`)",
 		},
 		{
 			name: "schema/O2O/1type/inverse",
@@ -552,7 +552,7 @@ func TestHasNeighbors(t *testing.T) {
 				return step
 			}(),
 			selector:  sql.Select("*").From(sql.Table("users").Schema("s1")),
-			wantQuery: "SELECT * FROM `s1`.`users` WHERE `s1`.`users`.`id` IN (SELECT `s2`.`pets`.`owner_id` FROM `s2`.`pets` WHERE `s2`.`pets`.`owner_id` IS NOT NULL)",
+			wantQuery: "SELECT * FROM `s1`.`users` WHERE EXISTS (SELECT `s2`.`pets`.`owner_id` FROM `s2`.`pets` WHERE `s1`.`users`.`id` = `s2`.`pets`.`owner_id`)",
 		},
 		{
 			name: "schema/M2O/2type2",
@@ -600,7 +600,7 @@ func TestHasNeighbors(t *testing.T) {
 				Edge(O2M, false, "pets", "owner_id"),
 			),
 			selector:  sql.Select("*").From(sql.Select("*").From(sql.Table("users")).As("users")).As("users"),
-			wantQuery: "SELECT * FROM (SELECT * FROM `users`) AS `users` WHERE `users`.`id` IN (SELECT `pets`.`owner_id` FROM `pets` WHERE `pets`.`owner_id` IS NOT NULL)",
+			wantQuery: "SELECT * FROM (SELECT * FROM `users`) AS `users` WHERE EXISTS (SELECT `pets`.`owner_id` FROM `pets` WHERE `users`.`id` = `pets`.`owner_id`)",
 		},
 		{
 			name: "M2O/2type2/selector",
@@ -1005,6 +1005,23 @@ func TestOrderByNeighborTerms(t *testing.T) {
 		query, args := s.Query()
 		require.Empty(t, args)
 		require.Equal(t, `SELECT "users"."name" FROM "users" LEFT JOIN (SELECT "workplace"."id", "workplace"."name" FROM "workplace") AS "t1" ON "users"."workplace_id" = "t1"."id" ORDER BY "t1"."name" NULLS FIRST`, query)
+	})
+	t.Run("M2O/SelectedAs", func(t *testing.T) {
+		s := s.Clone()
+		OrderByNeighborTerms(s,
+			NewStep(
+				From("users", "id"),
+				To("workplace", "id"),
+				Edge(M2O, true, "users", "workplace_id"),
+			),
+			sql.OrderByField(
+				"name",
+				sql.OrderSelectAs("workplace_name"),
+			),
+		)
+		query, args := s.Query()
+		require.Empty(t, args)
+		require.Equal(t, `SELECT "users"."name", "t1"."workplace_name" FROM "users" LEFT JOIN (SELECT "workplace"."id", "workplace"."name" AS "workplace_name" FROM "workplace") AS "t1" ON "users"."workplace_id" = "t1"."id" ORDER BY "t1"."workplace_name" NULLS FIRST`, query)
 	})
 	t.Run("M2O/NullsLast", func(t *testing.T) {
 		s := s.Clone()

@@ -25,7 +25,7 @@ import (
 type UserQuery struct {
 	config
 	ctx         *QueryContext
-	order       []user.Order
+	order       []user.OrderOption
 	inters      []Interceptor
 	predicates  []predicate.User
 	withPets    *PetQuery
@@ -63,7 +63,7 @@ func (uq *UserQuery) Unique(unique bool) *UserQuery {
 }
 
 // Order specifies how the records should be ordered.
-func (uq *UserQuery) Order(o ...user.Order) *UserQuery {
+func (uq *UserQuery) Order(o ...user.OrderOption) *UserQuery {
 	uq.order = append(uq.order, o...)
 	return uq
 }
@@ -345,7 +345,7 @@ func (uq *UserQuery) Clone() *UserQuery {
 	return &UserQuery{
 		config:      uq.config,
 		ctx:         uq.ctx.Clone(),
-		order:       append([]user.Order{}, uq.order...),
+		order:       append([]user.OrderOption{}, uq.order...),
 		inters:      append([]Interceptor{}, uq.inters...),
 		predicates:  append([]predicate.User{}, uq.predicates...),
 		withPets:    uq.withPets.Clone(),
@@ -561,7 +561,7 @@ func (uq *UserQuery) loadPets(ctx context.Context, query *PetQuery, nodes []*Use
 		}
 		node, ok := nodeids[*fk]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "user_pets" returned %v for node %v`, *fk, n.ID)
+			return fmt.Errorf(`unexpected referenced foreign-key "user_pets" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
 	}
@@ -714,7 +714,7 @@ func (uq *UserQuery) loadManage(ctx context.Context, query *GroupQuery, nodes []
 		}
 		node, ok := nodeids[*fk]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "group_admin" returned %v for node %v`, *fk, n.ID)
+			return fmt.Errorf(`unexpected referenced foreign-key "group_admin" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
 	}

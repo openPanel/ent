@@ -25,7 +25,7 @@ import (
 type ProcessQuery struct {
 	config
 	ctx               *QueryContext
-	order             []process.Order
+	order             []process.OrderOption
 	inters            []Interceptor
 	predicates        []predicate.Process
 	withFiles         *FileQuery
@@ -61,7 +61,7 @@ func (pq *ProcessQuery) Unique(unique bool) *ProcessQuery {
 }
 
 // Order specifies how the records should be ordered.
-func (pq *ProcessQuery) Order(o ...process.Order) *ProcessQuery {
+func (pq *ProcessQuery) Order(o ...process.OrderOption) *ProcessQuery {
 	pq.order = append(pq.order, o...)
 	return pq
 }
@@ -299,7 +299,7 @@ func (pq *ProcessQuery) Clone() *ProcessQuery {
 	return &ProcessQuery{
 		config:            pq.config,
 		ctx:               pq.ctx.Clone(),
-		order:             append([]process.Order{}, pq.order...),
+		order:             append([]process.OrderOption{}, pq.order...),
 		inters:            append([]Interceptor{}, pq.inters...),
 		predicates:        append([]predicate.Process{}, pq.predicates...),
 		withFiles:         pq.withFiles.Clone(),
@@ -499,6 +499,9 @@ func (pq *ProcessQuery) loadAttachedFiles(ctx context.Context, query *AttachedFi
 			init(nodes[i])
 		}
 	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(attachedfile.FieldProcID)
+	}
 	query.Where(predicate.AttachedFile(func(s *sql.Selector) {
 		s.Where(sql.InValues(s.C(process.AttachedFilesColumn), fks...))
 	}))
@@ -510,7 +513,7 @@ func (pq *ProcessQuery) loadAttachedFiles(ctx context.Context, query *AttachedFi
 		fk := n.ProcID
 		node, ok := nodeids[fk]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "proc_id" returned %v for node %v`, fk, n.ID)
+			return fmt.Errorf(`unexpected referenced foreign-key "proc_id" returned %v for node %v`, fk, n.ID)
 		}
 		assign(node, n)
 	}

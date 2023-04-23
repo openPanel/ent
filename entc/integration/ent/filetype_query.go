@@ -25,7 +25,7 @@ import (
 type FileTypeQuery struct {
 	config
 	ctx            *QueryContext
-	order          []filetype.Order
+	order          []filetype.OrderOption
 	inters         []Interceptor
 	predicates     []predicate.FileType
 	withFiles      *FileQuery
@@ -62,7 +62,7 @@ func (ftq *FileTypeQuery) Unique(unique bool) *FileTypeQuery {
 }
 
 // Order specifies how the records should be ordered.
-func (ftq *FileTypeQuery) Order(o ...filetype.Order) *FileTypeQuery {
+func (ftq *FileTypeQuery) Order(o ...filetype.OrderOption) *FileTypeQuery {
 	ftq.order = append(ftq.order, o...)
 	return ftq
 }
@@ -278,7 +278,7 @@ func (ftq *FileTypeQuery) Clone() *FileTypeQuery {
 	return &FileTypeQuery{
 		config:     ftq.config,
 		ctx:        ftq.ctx.Clone(),
-		order:      append([]filetype.Order{}, ftq.order...),
+		order:      append([]filetype.OrderOption{}, ftq.order...),
 		inters:     append([]Interceptor{}, ftq.inters...),
 		predicates: append([]predicate.FileType{}, ftq.predicates...),
 		withFiles:  ftq.withFiles.Clone(),
@@ -444,7 +444,7 @@ func (ftq *FileTypeQuery) loadFiles(ctx context.Context, query *FileQuery, nodes
 		}
 		node, ok := nodeids[*fk]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "file_type_files" returned %v for node %v`, *fk, n.ID)
+			return fmt.Errorf(`unexpected referenced foreign-key "file_type_files" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
 	}

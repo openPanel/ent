@@ -27,7 +27,7 @@ import (
 type FileQuery struct {
 	config
 	ctx            *QueryContext
-	order          []file.Order
+	order          []file.OrderOption
 	inters         []Interceptor
 	predicates     []predicate.File
 	withOwner      *UserQuery
@@ -67,7 +67,7 @@ func (fq *FileQuery) Unique(unique bool) *FileQuery {
 }
 
 // Order specifies how the records should be ordered.
-func (fq *FileQuery) Order(o ...file.Order) *FileQuery {
+func (fq *FileQuery) Order(o ...file.OrderOption) *FileQuery {
 	fq.order = append(fq.order, o...)
 	return fq
 }
@@ -327,7 +327,7 @@ func (fq *FileQuery) Clone() *FileQuery {
 	return &FileQuery{
 		config:     fq.config,
 		ctx:        fq.ctx.Clone(),
-		order:      append([]file.Order{}, fq.order...),
+		order:      append([]file.OrderOption{}, fq.order...),
 		inters:     append([]Interceptor{}, fq.inters...),
 		predicates: append([]predicate.File{}, fq.predicates...),
 		withOwner:  fq.withOwner.Clone(),
@@ -602,7 +602,7 @@ func (fq *FileQuery) loadField(ctx context.Context, query *FieldTypeQuery, nodes
 		}
 		node, ok := nodeids[*fk]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "file_field" returned %v for node %v`, *fk, n.ID)
+			return fmt.Errorf(`unexpected referenced foreign-key "file_field" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
 	}

@@ -25,7 +25,7 @@ import (
 type GroupInfoQuery struct {
 	config
 	ctx             *QueryContext
-	order           []groupinfo.Order
+	order           []groupinfo.OrderOption
 	inters          []Interceptor
 	predicates      []predicate.GroupInfo
 	withGroups      *GroupQuery
@@ -62,7 +62,7 @@ func (giq *GroupInfoQuery) Unique(unique bool) *GroupInfoQuery {
 }
 
 // Order specifies how the records should be ordered.
-func (giq *GroupInfoQuery) Order(o ...groupinfo.Order) *GroupInfoQuery {
+func (giq *GroupInfoQuery) Order(o ...groupinfo.OrderOption) *GroupInfoQuery {
 	giq.order = append(giq.order, o...)
 	return giq
 }
@@ -278,7 +278,7 @@ func (giq *GroupInfoQuery) Clone() *GroupInfoQuery {
 	return &GroupInfoQuery{
 		config:     giq.config,
 		ctx:        giq.ctx.Clone(),
-		order:      append([]groupinfo.Order{}, giq.order...),
+		order:      append([]groupinfo.OrderOption{}, giq.order...),
 		inters:     append([]Interceptor{}, giq.inters...),
 		predicates: append([]predicate.GroupInfo{}, giq.predicates...),
 		withGroups: giq.withGroups.Clone(),
@@ -444,7 +444,7 @@ func (giq *GroupInfoQuery) loadGroups(ctx context.Context, query *GroupQuery, no
 		}
 		node, ok := nodeids[*fk]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "group_info" returned %v for node %v`, *fk, n.ID)
+			return fmt.Errorf(`unexpected referenced foreign-key "group_info" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
 	}

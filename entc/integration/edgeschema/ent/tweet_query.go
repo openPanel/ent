@@ -28,7 +28,7 @@ import (
 type TweetQuery struct {
 	config
 	ctx            *QueryContext
-	order          []tweet.Order
+	order          []tweet.OrderOption
 	inters         []Interceptor
 	predicates     []predicate.Tweet
 	withLikedUsers *UserQuery
@@ -68,7 +68,7 @@ func (tq *TweetQuery) Unique(unique bool) *TweetQuery {
 }
 
 // Order specifies how the records should be ordered.
-func (tq *TweetQuery) Order(o ...tweet.Order) *TweetQuery {
+func (tq *TweetQuery) Order(o ...tweet.OrderOption) *TweetQuery {
 	tq.order = append(tq.order, o...)
 	return tq
 }
@@ -394,7 +394,7 @@ func (tq *TweetQuery) Clone() *TweetQuery {
 	return &TweetQuery{
 		config:         tq.config,
 		ctx:            tq.ctx.Clone(),
-		order:          append([]tweet.Order{}, tq.order...),
+		order:          append([]tweet.OrderOption{}, tq.order...),
 		inters:         append([]Interceptor{}, tq.inters...),
 		predicates:     append([]predicate.Tweet{}, tq.predicates...),
 		withLikedUsers: tq.withLikedUsers.Clone(),
@@ -818,6 +818,9 @@ func (tq *TweetQuery) loadLikes(ctx context.Context, query *TweetLikeQuery, node
 			init(nodes[i])
 		}
 	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(tweetlike.FieldTweetID)
+	}
 	query.Where(predicate.TweetLike(func(s *sql.Selector) {
 		s.Where(sql.InValues(s.C(tweet.LikesColumn), fks...))
 	}))
@@ -829,7 +832,7 @@ func (tq *TweetQuery) loadLikes(ctx context.Context, query *TweetLikeQuery, node
 		fk := n.TweetID
 		node, ok := nodeids[fk]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "tweet_id" returned %v for node %v`, fk, n)
+			return fmt.Errorf(`unexpected referenced foreign-key "tweet_id" returned %v for node %v`, fk, n)
 		}
 		assign(node, n)
 	}
@@ -845,6 +848,9 @@ func (tq *TweetQuery) loadTweetUser(ctx context.Context, query *UserTweetQuery, 
 			init(nodes[i])
 		}
 	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(usertweet.FieldTweetID)
+	}
 	query.Where(predicate.UserTweet(func(s *sql.Selector) {
 		s.Where(sql.InValues(s.C(tweet.TweetUserColumn), fks...))
 	}))
@@ -856,7 +862,7 @@ func (tq *TweetQuery) loadTweetUser(ctx context.Context, query *UserTweetQuery, 
 		fk := n.TweetID
 		node, ok := nodeids[fk]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "tweet_id" returned %v for node %v`, fk, n.ID)
+			return fmt.Errorf(`unexpected referenced foreign-key "tweet_id" returned %v for node %v`, fk, n.ID)
 		}
 		assign(node, n)
 	}
@@ -872,6 +878,9 @@ func (tq *TweetQuery) loadTweetTags(ctx context.Context, query *TweetTagQuery, n
 			init(nodes[i])
 		}
 	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(tweettag.FieldTweetID)
+	}
 	query.Where(predicate.TweetTag(func(s *sql.Selector) {
 		s.Where(sql.InValues(s.C(tweet.TweetTagsColumn), fks...))
 	}))
@@ -883,7 +892,7 @@ func (tq *TweetQuery) loadTweetTags(ctx context.Context, query *TweetTagQuery, n
 		fk := n.TweetID
 		node, ok := nodeids[fk]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "tweet_id" returned %v for node %v`, fk, n.ID)
+			return fmt.Errorf(`unexpected referenced foreign-key "tweet_id" returned %v for node %v`, fk, n.ID)
 		}
 		assign(node, n)
 	}

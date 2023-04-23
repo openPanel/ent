@@ -23,7 +23,7 @@ import (
 type NodeQuery struct {
 	config
 	ctx        *QueryContext
-	order      []node.Order
+	order      []node.OrderOption
 	inters     []Interceptor
 	predicates []predicate.Node
 	withPrev   *NodeQuery
@@ -59,7 +59,7 @@ func (nq *NodeQuery) Unique(unique bool) *NodeQuery {
 }
 
 // Order specifies how the records should be ordered.
-func (nq *NodeQuery) Order(o ...node.Order) *NodeQuery {
+func (nq *NodeQuery) Order(o ...node.OrderOption) *NodeQuery {
 	nq.order = append(nq.order, o...)
 	return nq
 }
@@ -297,7 +297,7 @@ func (nq *NodeQuery) Clone() *NodeQuery {
 	return &NodeQuery{
 		config:     nq.config,
 		ctx:        nq.ctx.Clone(),
-		order:      append([]node.Order{}, nq.order...),
+		order:      append([]node.OrderOption{}, nq.order...),
 		inters:     append([]Interceptor{}, nq.inters...),
 		predicates: append([]predicate.Node{}, nq.predicates...),
 		withPrev:   nq.withPrev.Clone(),
@@ -482,6 +482,9 @@ func (nq *NodeQuery) loadNext(ctx context.Context, query *NodeQuery, nodes []*No
 		fks = append(fks, nodes[i].ID)
 		nodeids[nodes[i].ID] = nodes[i]
 	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(node.FieldPrevID)
+	}
 	query.Where(predicate.Node(func(s *sql.Selector) {
 		s.Where(sql.InValues(s.C(node.NextColumn), fks...))
 	}))
@@ -493,7 +496,7 @@ func (nq *NodeQuery) loadNext(ctx context.Context, query *NodeQuery, nodes []*No
 		fk := n.PrevID
 		node, ok := nodeids[fk]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "prev_id" returned %v for node %v`, fk, n.ID)
+			return fmt.Errorf(`unexpected referenced foreign-key "prev_id" returned %v for node %v`, fk, n.ID)
 		}
 		assign(node, n)
 	}

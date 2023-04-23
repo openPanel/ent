@@ -27,7 +27,7 @@ import (
 type GroupQuery struct {
 	config
 	ctx              *QueryContext
-	order            []group.Order
+	order            []group.OrderOption
 	inters           []Interceptor
 	predicates       []predicate.Group
 	withFiles        *FileQuery
@@ -70,7 +70,7 @@ func (gq *GroupQuery) Unique(unique bool) *GroupQuery {
 }
 
 // Order specifies how the records should be ordered.
-func (gq *GroupQuery) Order(o ...group.Order) *GroupQuery {
+func (gq *GroupQuery) Order(o ...group.OrderOption) *GroupQuery {
 	gq.order = append(gq.order, o...)
 	return gq
 }
@@ -352,7 +352,7 @@ func (gq *GroupQuery) Clone() *GroupQuery {
 	return &GroupQuery{
 		config:      gq.config,
 		ctx:         gq.ctx.Clone(),
-		order:       append([]group.Order{}, gq.order...),
+		order:       append([]group.OrderOption{}, gq.order...),
 		inters:      append([]Interceptor{}, gq.inters...),
 		predicates:  append([]predicate.Group{}, gq.predicates...),
 		withFiles:   gq.withFiles.Clone(),
@@ -598,7 +598,7 @@ func (gq *GroupQuery) loadFiles(ctx context.Context, query *FileQuery, nodes []*
 		}
 		node, ok := nodeids[*fk]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "group_files" returned %v for node %v`, *fk, n.ID)
+			return fmt.Errorf(`unexpected referenced foreign-key "group_files" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
 	}
@@ -629,7 +629,7 @@ func (gq *GroupQuery) loadBlocked(ctx context.Context, query *UserQuery, nodes [
 		}
 		node, ok := nodeids[*fk]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "group_blocked" returned %v for node %v`, *fk, n.ID)
+			return fmt.Errorf(`unexpected referenced foreign-key "group_blocked" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
 	}
