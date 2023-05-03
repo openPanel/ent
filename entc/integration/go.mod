@@ -5,7 +5,7 @@ go 1.20
 replace entgo.io/ent => ../../
 
 require (
-	ariga.io/atlas v0.10.0
+	ariga.io/atlas v0.10.2-0.20230502203727-939293626ab2
 	entgo.io/ent v0.12.2-0.20230420123650-f6de6bb2e04c
 	github.com/go-sql-driver/mysql v1.7.0
 	github.com/google/uuid v1.3.0
@@ -30,7 +30,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/stretchr/objx v0.5.0 // indirect
 	github.com/zclconf/go-cty v1.8.0 // indirect
-	golang.org/x/mod v0.8.0 // indirect
+	golang.org/x/mod v0.10.0 // indirect
 	golang.org/x/text v0.8.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
