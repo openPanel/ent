@@ -53,6 +53,7 @@ const (
 
 	// Node types.
 	TypeAPI         = "Api"
+	TypeBuilder     = "Builder"
 	TypeCard        = "Card"
 	TypeComment     = "Comment"
 	TypeExValueScan = "ExValueScan"
@@ -65,6 +66,7 @@ const (
 	TypeItem        = "Item"
 	TypeLicense     = "License"
 	TypeNode        = "Node"
+	TypePC          = "PC"
 	TypePet         = "Pet"
 	TypeSpec        = "Spec"
 	TypeTask        = "Task"
@@ -333,6 +335,270 @@ func (m *APIMutation) ClearEdge(name string) error {
 // It returns an error if the edge is not defined in the schema.
 func (m *APIMutation) ResetEdge(name string) error {
 	return fmt.Errorf("unknown Api edge %s", name)
+}
+
+// BuilderMutation represents an operation that mutates the Builder nodes in the graph.
+type BuilderMutation struct {
+	config
+	op            Op
+	typ           string
+	id            *string
+	clearedFields map[string]struct{}
+	done          bool
+	oldValue      func(context.Context) (*Builder, error)
+	predicates    []predicate.Builder
+}
+
+var _ ent.Mutation = (*BuilderMutation)(nil)
+
+// builderOption allows management of the mutation configuration using functional options.
+type builderOption func(*BuilderMutation)
+
+// newBuilderMutation creates new mutation for the Builder entity.
+func newBuilderMutation(c config, op Op, opts ...builderOption) *BuilderMutation {
+	m := &BuilderMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeBuilder,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withBuilderID sets the ID field of the mutation.
+func withBuilderID(id string) builderOption {
+	return func(m *BuilderMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *Builder
+		)
+		m.oldValue = func(ctx context.Context) (*Builder, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().Builder.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withBuilder sets the old Builder of the mutation.
+func withBuilder(node *Builder) builderOption {
+	return func(m *BuilderMutation) {
+		m.oldValue = func(context.Context) (*Builder, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m BuilderMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m BuilderMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *BuilderMutation) ID() (id string, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *BuilderMutation) IDs(ctx context.Context) ([]string, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []string{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().Builder.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// Where appends a list predicates to the BuilderMutation builder.
+func (m *BuilderMutation) Where(ps ...predicate.Builder) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the BuilderMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *BuilderMutation) WhereP(ps ...func(*dsl.Traversal)) {
+	p := make([]predicate.Builder, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *BuilderMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *BuilderMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (Builder).
+func (m *BuilderMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *BuilderMutation) Fields() []string {
+	fields := make([]string, 0, 0)
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *BuilderMutation) Field(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *BuilderMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	return nil, fmt.Errorf("unknown Builder field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *BuilderMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown Builder field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *BuilderMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *BuilderMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *BuilderMutation) AddField(name string, value ent.Value) error {
+	return fmt.Errorf("unknown Builder numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *BuilderMutation) ClearedFields() []string {
+	return nil
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *BuilderMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *BuilderMutation) ClearField(name string) error {
+	return fmt.Errorf("unknown Builder nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *BuilderMutation) ResetField(name string) error {
+	return fmt.Errorf("unknown Builder field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *BuilderMutation) AddedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *BuilderMutation) AddedIDs(name string) []ent.Value {
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *BuilderMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *BuilderMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *BuilderMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *BuilderMutation) EdgeCleared(name string) bool {
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *BuilderMutation) ClearEdge(name string) error {
+	return fmt.Errorf("unknown Builder unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *BuilderMutation) ResetEdge(name string) error {
+	return fmt.Errorf("unknown Builder edge %s", name)
 }
 
 // CardMutation represents an operation that mutates the Card nodes in the graph.
@@ -12992,6 +13258,270 @@ func (m *NodeMutation) ResetEdge(name string) error {
 	return fmt.Errorf("unknown Node edge %s", name)
 }
 
+// PCMutation represents an operation that mutates the PC nodes in the graph.
+type PCMutation struct {
+	config
+	op            Op
+	typ           string
+	id            *string
+	clearedFields map[string]struct{}
+	done          bool
+	oldValue      func(context.Context) (*PC, error)
+	predicates    []predicate.PC
+}
+
+var _ ent.Mutation = (*PCMutation)(nil)
+
+// pcOption allows management of the mutation configuration using functional options.
+type pcOption func(*PCMutation)
+
+// newPCMutation creates new mutation for the PC entity.
+func newPCMutation(c config, op Op, opts ...pcOption) *PCMutation {
+	m := &PCMutation{
+		config:        c,
+		op:            op,
+		typ:           TypePC,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withPCID sets the ID field of the mutation.
+func withPCID(id string) pcOption {
+	return func(m *PCMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *PC
+		)
+		m.oldValue = func(ctx context.Context) (*PC, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().PC.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withPC sets the old PC of the mutation.
+func withPC(node *PC) pcOption {
+	return func(m *PCMutation) {
+		m.oldValue = func(context.Context) (*PC, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m PCMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m PCMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *PCMutation) ID() (id string, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *PCMutation) IDs(ctx context.Context) ([]string, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []string{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().PC.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// Where appends a list predicates to the PCMutation builder.
+func (m *PCMutation) Where(ps ...predicate.PC) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the PCMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *PCMutation) WhereP(ps ...func(*dsl.Traversal)) {
+	p := make([]predicate.PC, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *PCMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *PCMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (PC).
+func (m *PCMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *PCMutation) Fields() []string {
+	fields := make([]string, 0, 0)
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *PCMutation) Field(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *PCMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	return nil, fmt.Errorf("unknown PC field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *PCMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown PC field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *PCMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *PCMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *PCMutation) AddField(name string, value ent.Value) error {
+	return fmt.Errorf("unknown PC numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *PCMutation) ClearedFields() []string {
+	return nil
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *PCMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *PCMutation) ClearField(name string) error {
+	return fmt.Errorf("unknown PC nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *PCMutation) ResetField(name string) error {
+	return fmt.Errorf("unknown PC field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *PCMutation) AddedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *PCMutation) AddedIDs(name string) []ent.Value {
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *PCMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *PCMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *PCMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *PCMutation) EdgeCleared(name string) bool {
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *PCMutation) ClearEdge(name string) error {
+	return fmt.Errorf("unknown PC unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *PCMutation) ResetEdge(name string) error {
+	return fmt.Errorf("unknown PC edge %s", name)
+}
+
 // PetMutation represents an operation that mutates the Pet nodes in the graph.
 type PetMutation struct {
 	config
@@ -14110,6 +14640,7 @@ type TaskMutation struct {
 	add_order       *int
 	order_option    *int
 	addorder_option *int
+	_op             *string
 	clearedFields   map[string]struct{}
 	done            bool
 	oldValue        func(context.Context) (*Task, error)
@@ -14593,6 +15124,42 @@ func (m *TaskMutation) ResetOrderOption() {
 	delete(m.clearedFields, enttask.FieldOrderOption)
 }
 
+// SetOpField sets the "op" field.
+func (m *TaskMutation) SetOpField(s string) {
+	m._op = &s
+}
+
+// GetOp returns the value of the "op" field in the mutation.
+func (m *TaskMutation) GetOp() (r string, exists bool) {
+	v := m._op
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldOp returns the old "op" field's value of the Task entity.
+// If the Task object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TaskMutation) OldOp(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldOp is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldOp requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldOp: %w", err)
+	}
+	return oldValue.Op, nil
+}
+
+// ResetOp resets all changes to the "op" field.
+func (m *TaskMutation) ResetOp() {
+	m._op = nil
+}
+
 // Where appends a list predicates to the TaskMutation builder.
 func (m *TaskMutation) Where(ps ...predicate.Task) {
 	m.predicates = append(m.predicates, ps...)
@@ -14627,7 +15194,7 @@ func (m *TaskMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *TaskMutation) Fields() []string {
-	fields := make([]string, 0, 7)
+	fields := make([]string, 0, 8)
 	if m.priority != nil {
 		fields = append(fields, enttask.FieldPriority)
 	}
@@ -14648,6 +15215,9 @@ func (m *TaskMutation) Fields() []string {
 	}
 	if m.order_option != nil {
 		fields = append(fields, enttask.FieldOrderOption)
+	}
+	if m._op != nil {
+		fields = append(fields, enttask.FieldOp)
 	}
 	return fields
 }
@@ -14671,6 +15241,8 @@ func (m *TaskMutation) Field(name string) (ent.Value, bool) {
 		return m.Order()
 	case enttask.FieldOrderOption:
 		return m.OrderOption()
+	case enttask.FieldOp:
+		return m.GetOp()
 	}
 	return nil, false
 }
@@ -14694,6 +15266,8 @@ func (m *TaskMutation) OldField(ctx context.Context, name string) (ent.Value, er
 		return m.OldOrder(ctx)
 	case enttask.FieldOrderOption:
 		return m.OldOrderOption(ctx)
+	case enttask.FieldOp:
+		return m.OldOp(ctx)
 	}
 	return nil, fmt.Errorf("unknown Task field %s", name)
 }
@@ -14751,6 +15325,13 @@ func (m *TaskMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetOrderOption(v)
+		return nil
+	case enttask.FieldOp:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetOpField(v)
 		return nil
 	}
 	return fmt.Errorf("unknown Task field %s", name)
@@ -14894,6 +15475,9 @@ func (m *TaskMutation) ResetField(name string) error {
 	case enttask.FieldOrderOption:
 		m.ResetOrderOption()
 		return nil
+	case enttask.FieldOp:
+		m.ResetOp()
+		return nil
 	}
 	return fmt.Errorf("unknown Task field %s", name)
 }
@@ -14965,6 +15549,8 @@ type UserMutation struct {
 	role             *user.Role
 	employment       *user.Employment
 	_SSOCert         *string
+	files_count      *int
+	addfiles_count   *int
 	clearedFields    map[string]struct{}
 	card             *string
 	clearedcard      bool
@@ -15613,6 +16199,76 @@ func (m *UserMutation) ResetSSOCert() {
 	delete(m.clearedFields, user.FieldSSOCert)
 }
 
+// SetFilesCount sets the "files_count" field.
+func (m *UserMutation) SetFilesCount(i int) {
+	m.files_count = &i
+	m.addfiles_count = nil
+}
+
+// FilesCount returns the value of the "files_count" field in the mutation.
+func (m *UserMutation) FilesCount() (r int, exists bool) {
+	v := m.files_count
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldFilesCount returns the old "files_count" field's value of the User entity.
+// If the User object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserMutation) OldFilesCount(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldFilesCount is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldFilesCount requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldFilesCount: %w", err)
+	}
+	return oldValue.FilesCount, nil
+}
+
+// AddFilesCount adds i to the "files_count" field.
+func (m *UserMutation) AddFilesCount(i int) {
+	if m.addfiles_count != nil {
+		*m.addfiles_count += i
+	} else {
+		m.addfiles_count = &i
+	}
+}
+
+// AddedFilesCount returns the value that was added to the "files_count" field in this mutation.
+func (m *UserMutation) AddedFilesCount() (r int, exists bool) {
+	v := m.addfiles_count
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearFilesCount clears the value of the "files_count" field.
+func (m *UserMutation) ClearFilesCount() {
+	m.files_count = nil
+	m.addfiles_count = nil
+	m.clearedFields[user.FieldFilesCount] = struct{}{}
+}
+
+// FilesCountCleared returns if the "files_count" field was cleared in this mutation.
+func (m *UserMutation) FilesCountCleared() bool {
+	_, ok := m.clearedFields[user.FieldFilesCount]
+	return ok
+}
+
+// ResetFilesCount resets all changes to the "files_count" field.
+func (m *UserMutation) ResetFilesCount() {
+	m.files_count = nil
+	m.addfiles_count = nil
+	delete(m.clearedFields, user.FieldFilesCount)
+}
+
 // SetCardID sets the "card" edge to the Card entity by id.
 func (m *UserMutation) SetCardID(id string) {
 	m.card = &id
@@ -16181,7 +16837,7 @@ func (m *UserMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *UserMutation) Fields() []string {
-	fields := make([]string, 0, 11)
+	fields := make([]string, 0, 12)
 	if m.optional_int != nil {
 		fields = append(fields, user.FieldOptionalInt)
 	}
@@ -16215,6 +16871,9 @@ func (m *UserMutation) Fields() []string {
 	if m._SSOCert != nil {
 		fields = append(fields, user.FieldSSOCert)
 	}
+	if m.files_count != nil {
+		fields = append(fields, user.FieldFilesCount)
+	}
 	return fields
 }
 
@@ -16245,6 +16904,8 @@ func (m *UserMutation) Field(name string) (ent.Value, bool) {
 		return m.Employment()
 	case user.FieldSSOCert:
 		return m.SSOCert()
+	case user.FieldFilesCount:
+		return m.FilesCount()
 	}
 	return nil, false
 }
@@ -16276,6 +16937,8 @@ func (m *UserMutation) OldField(ctx context.Context, name string) (ent.Value, er
 		return m.OldEmployment(ctx)
 	case user.FieldSSOCert:
 		return m.OldSSOCert(ctx)
+	case user.FieldFilesCount:
+		return m.OldFilesCount(ctx)
 	}
 	return nil, fmt.Errorf("unknown User field %s", name)
 }
@@ -16362,6 +17025,13 @@ func (m *UserMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetSSOCert(v)
 		return nil
+	case user.FieldFilesCount:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetFilesCount(v)
+		return nil
 	}
 	return fmt.Errorf("unknown User field %s", name)
 }
@@ -16376,6 +17046,9 @@ func (m *UserMutation) AddedFields() []string {
 	if m.addage != nil {
 		fields = append(fields, user.FieldAge)
 	}
+	if m.addfiles_count != nil {
+		fields = append(fields, user.FieldFilesCount)
+	}
 	return fields
 }
 
@@ -16388,6 +17061,8 @@ func (m *UserMutation) AddedField(name string) (ent.Value, bool) {
 		return m.AddedOptionalInt()
 	case user.FieldAge:
 		return m.AddedAge()
+	case user.FieldFilesCount:
+		return m.AddedFilesCount()
 	}
 	return nil, false
 }
@@ -16410,6 +17085,13 @@ func (m *UserMutation) AddField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.AddAge(v)
+		return nil
+	case user.FieldFilesCount:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddFilesCount(v)
 		return nil
 	}
 	return fmt.Errorf("unknown User numeric field %s", name)
@@ -16436,6 +17118,9 @@ func (m *UserMutation) ClearedFields() []string {
 	}
 	if m.FieldCleared(user.FieldSSOCert) {
 		fields = append(fields, user.FieldSSOCert)
+	}
+	if m.FieldCleared(user.FieldFilesCount) {
+		fields = append(fields, user.FieldFilesCount)
 	}
 	return fields
 }
@@ -16468,6 +17153,9 @@ func (m *UserMutation) ClearField(name string) error {
 		return nil
 	case user.FieldSSOCert:
 		m.ClearSSOCert()
+		return nil
+	case user.FieldFilesCount:
+		m.ClearFilesCount()
 		return nil
 	}
 	return fmt.Errorf("unknown User nullable field %s", name)
@@ -16509,6 +17197,9 @@ func (m *UserMutation) ResetField(name string) error {
 		return nil
 	case user.FieldSSOCert:
 		m.ResetSSOCert()
+		return nil
+	case user.FieldFilesCount:
+		m.ResetFilesCount()
 		return nil
 	}
 	return fmt.Errorf("unknown User field %s", name)

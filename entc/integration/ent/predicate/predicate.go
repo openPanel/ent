@@ -13,6 +13,9 @@ import (
 // Api is the predicate function for api builders.
 type Api func(*sql.Selector)
 
+// Builder is the predicate function for builder builders.
+type Builder func(*sql.Selector)
+
 // Card is the predicate function for card builders.
 type Card func(*sql.Selector)
 
@@ -59,6 +62,9 @@ type License func(*sql.Selector)
 
 // Node is the predicate function for node builders.
 type Node func(*sql.Selector)
+
+// PC is the predicate function for pc builders.
+type PC func(*sql.Selector)
 
 // Pet is the predicate function for pet builders.
 type Pet func(*sql.Selector)

@@ -164,6 +164,20 @@ func (uc *UserCreate) SetNillableSSOCert(s *string) *UserCreate {
 	return uc
 }
 
+// SetFilesCount sets the "files_count" field.
+func (uc *UserCreate) SetFilesCount(i int) *UserCreate {
+	uc.mutation.SetFilesCount(i)
+	return uc
+}
+
+// SetNillableFilesCount sets the "files_count" field if the given value is not nil.
+func (uc *UserCreate) SetNillableFilesCount(i *int) *UserCreate {
+	if i != nil {
+		uc.SetFilesCount(*i)
+	}
+	return uc
+}
+
 // SetCardID sets the "card" edge to the Card entity by ID.
 func (uc *UserCreate) SetCardID(id string) *UserCreate {
 	uc.mutation.SetCardID(id)
@@ -445,13 +459,13 @@ func (uc *UserCreate) gremlinSave(ctx context.Context) (*User, error) {
 	if err, ok := isConstantError(res); ok {
 		return nil, err
 	}
-	u := &User{config: uc.config}
-	if err := u.FromResponse(res); err != nil {
+	rnode := &User{config: uc.config}
+	if err := rnode.FromResponse(res); err != nil {
 		return nil, err
 	}
-	uc.mutation.id = &u.ID
+	uc.mutation.id = &rnode.ID
 	uc.mutation.done = true
-	return u, nil
+	return rnode, nil
 }
 
 func (uc *UserCreate) gremlin() *dsl.Traversal {
@@ -501,6 +515,9 @@ func (uc *UserCreate) gremlin() *dsl.Traversal {
 	}
 	if value, ok := uc.mutation.SSOCert(); ok {
 		v.Property(dsl.Single, user.FieldSSOCert, value)
+	}
+	if value, ok := uc.mutation.FilesCount(); ok {
+		v.Property(dsl.Single, user.FieldFilesCount, value)
 	}
 	for _, id := range uc.mutation.CardIDs() {
 		v.AddE(user.CardLabel).To(g.V(id)).OutV()

@@ -18,6 +18,8 @@ type Tx struct {
 	config
 	// Api is the client for interacting with the Api builders.
 	Api *APIClient
+	// Builder is the client for interacting with the Builder builders.
+	Builder *BuilderClient
 	// Card is the client for interacting with the Card builders.
 	Card *CardClient
 	// Comment is the client for interacting with the Comment builders.
@@ -42,6 +44,8 @@ type Tx struct {
 	License *LicenseClient
 	// Node is the client for interacting with the Node builders.
 	Node *NodeClient
+	// PC is the client for interacting with the PC builders.
+	PC *PCClient
 	// Pet is the client for interacting with the Pet builders.
 	Pet *PetClient
 	// Spec is the client for interacting with the Spec builders.
@@ -182,6 +186,7 @@ func (tx *Tx) Client() *Client {
 
 func (tx *Tx) init() {
 	tx.Api = NewAPIClient(tx.config)
+	tx.Builder = NewBuilderClient(tx.config)
 	tx.Card = NewCardClient(tx.config)
 	tx.Comment = NewCommentClient(tx.config)
 	tx.ExValueScan = NewExValueScanClient(tx.config)
@@ -194,6 +199,7 @@ func (tx *Tx) init() {
 	tx.Item = NewItemClient(tx.config)
 	tx.License = NewLicenseClient(tx.config)
 	tx.Node = NewNodeClient(tx.config)
+	tx.PC = NewPCClient(tx.config)
 	tx.Pet = NewPetClient(tx.config)
 	tx.Spec = NewSpecClient(tx.config)
 	tx.Task = NewTaskClient(tx.config)

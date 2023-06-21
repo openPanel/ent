@@ -23,6 +23,16 @@ var (
 		Columns:    ApisColumns,
 		PrimaryKey: []*schema.Column{ApisColumns[0]},
 	}
+	// BuildersColumns holds the columns for the "builders" table.
+	BuildersColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+	}
+	// BuildersTable holds the schema information for the "builders" table.
+	BuildersTable = &schema.Table{
+		Name:       "builders",
+		Columns:    BuildersColumns,
+		PrimaryKey: []*schema.Column{BuildersColumns[0]},
+	}
 	// CardsColumns holds the columns for the "cards" table.
 	CardsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
@@ -350,6 +360,16 @@ var (
 			},
 		},
 	}
+	// PcsColumns holds the columns for the "pcs" table.
+	PcsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+	}
+	// PcsTable holds the schema information for the "pcs" table.
+	PcsTable = &schema.Table{
+		Name:       "pcs",
+		Columns:    PcsColumns,
+		PrimaryKey: []*schema.Column{PcsColumns[0]},
+	}
 	// PetColumns holds the columns for the "pet" table.
 	PetColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
@@ -413,6 +433,7 @@ var (
 		{Name: "owner", Type: field.TypeString, Nullable: true},
 		{Name: "order", Type: field.TypeInt, Nullable: true},
 		{Name: "order_option", Type: field.TypeInt, Nullable: true},
+		{Name: "op", Type: field.TypeString, Size: 45, Default: ""},
 	}
 	// TasksTable holds the schema information for the "tasks" table.
 	TasksTable = &schema.Table{
@@ -441,6 +462,7 @@ var (
 		{Name: "role", Type: field.TypeEnum, Enums: []string{"user", "admin", "free-user", "test user"}, Default: "user"},
 		{Name: "employment", Type: field.TypeEnum, Enums: []string{"Full-Time", "Part-Time", "Contract"}, Default: "Full-Time"},
 		{Name: "sso_cert", Type: field.TypeString, Nullable: true},
+		{Name: "files_count", Type: field.TypeInt, Nullable: true},
 		{Name: "group_blocked", Type: field.TypeInt, Nullable: true},
 		{Name: "user_spouse", Type: field.TypeInt, Unique: true, Nullable: true},
 		{Name: "user_parent", Type: field.TypeInt, Nullable: true},
@@ -453,19 +475,19 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "users_groups_blocked",
-				Columns:    []*schema.Column{UsersColumns[12]},
+				Columns:    []*schema.Column{UsersColumns[13]},
 				RefColumns: []*schema.Column{GroupsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "users_users_spouse",
-				Columns:    []*schema.Column{UsersColumns[13]},
+				Columns:    []*schema.Column{UsersColumns[14]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "users_users_parent",
-				Columns:    []*schema.Column{UsersColumns[14]},
+				Columns:    []*schema.Column{UsersColumns[15]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -574,6 +596,7 @@ var (
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
 		ApisTable,
+		BuildersTable,
 		CardsTable,
 		CommentsTable,
 		ExValueScansTable,
@@ -586,6 +609,7 @@ var (
 		ItemsTable,
 		LicensesTable,
 		NodesTable,
+		PcsTable,
 		PetTable,
 		SpecsTable,
 		TasksTable,
